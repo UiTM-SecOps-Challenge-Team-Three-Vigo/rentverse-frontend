@@ -1,198 +1,157 @@
-'use client'
+'use client';
 
-import React, { useRef, useEffect, useCallback, memo } from 'react'
-import * as maptilersdk from '@maptiler/sdk'
+import React, { useRef, useEffect, useCallback, memo, useState } from 'react';
+import * as maptilersdk from '@maptiler/sdk';
+import '@maptiler/sdk/dist/maptiler-sdk.css';
 
 interface MapViewerProps {
-  center?: {
-    lng: number
-    lat: number
-  }
-  zoom?: number
-  style?: string
-  className?: string
-  height?: string
-  width?: string
+  center?: { lng: number; lat: number };
+  zoom?: number;
+  // ✅ FIX: Allow style to be string OR object (any) to match maptilersdk.MapStyle.STREETS
+  style?: string | any; 
+  className?: string;
+  height?: string;
+  width?: string;
   markers?: Array<{
-    lng: number
-    lat: number
-    popup?: string
-    color?: string
-  }>
-  onMapLoad?: (map: maptilersdk.Map) => void
-  onMapClick?: (coordinates: { lng: number; lat: number }) => void
-  interactive?: boolean
+    lng: number;
+    lat: number;
+    popup?: string;
+    color?: string;
+  }>;
+  onMapLoad?: (map: maptilersdk.Map) => void;
+  onMapClick?: (coordinates: { lng: number; lat: number }) => void;
+  interactive?: boolean;
 }
 
 const MapViewer = memo(function MapViewer({
-                                            center = { lng: 139.753, lat: 35.6844 }, // Default to Tokyo
-                                            zoom = 14,
-                                            style = 'streets-v2',
-                                            className = '',
-                                            height = '100%',
-                                            width = '100%',
-                                            markers = [],
-                                            onMapLoad,
-                                            onMapClick,
-                                            interactive = true,
-                                          }: MapViewerProps) {
-  const mapContainer = useRef<HTMLDivElement>(null)
-  const map = useRef<maptilersdk.Map | null>(null)
-  const markersRef = useRef<maptilersdk.Marker[]>([])
-  const isMapLoaded = useRef(false)
+  center = { lng: 101.6869, lat: 3.1390 }, // Default to KL
+  zoom = 10,
+  style = maptilersdk.MapStyle.STREETS, // Now compatible with the interface
+  className = '',
+  height = '100%',
+  width = '100%',
+  markers = [],
+  onMapLoad,
+  onMapClick,
+  interactive = true,
+}: MapViewerProps) {
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<maptilersdk.Map | null>(null);
+  const markersRef = useRef<maptilersdk.Marker[]>([]);
+  const isMapLoaded = useRef(false);
+  const [apiKey] = useState(process.env.NEXT_PUBLIC_MAPTILER_API_KEY || '');
 
-  // Initialize API key once
+  // 1. Set API Key
   useEffect(() => {
-    if (!maptilersdk.config.apiKey) {
-      maptilersdk.config.apiKey = process.env.NEXT_PUBLIC_MAPTILER_API || ''
+    if (apiKey) {
+      maptilersdk.config.apiKey = apiKey;
     }
-  }, [])
+  }, [apiKey]);
 
-  // Clear existing markers
+  // 2. Clear Markers Helper
   const clearMarkers = useCallback(() => {
-    markersRef.current.forEach(marker => marker.remove())
-    markersRef.current = []
-  }, [])
+    markersRef.current.forEach((marker) => marker.remove());
+    markersRef.current = [];
+  }, []);
 
-  // Add markers to map
-  const addMarkers = useCallback((mapInstance: maptilersdk.Map) => {
-    clearMarkers()
+  // 3. Add Markers Helper
+  const addMarkers = useCallback(
+    (mapInstance: maptilersdk.Map, markersData: typeof markers) => {
+      clearMarkers();
 
-    console.log('Adding markers to map:', markers.length)
-    
-    markers.forEach((markerData, index) => {
-      console.log(`Creating marker ${index}:`, markerData)
-      
-      const marker = new maptilersdk.Marker({
-        color: markerData.color || '#3B82F6',
-      })
-        .setLngLat([markerData.lng, markerData.lat])
-        .addTo(mapInstance)
+      markersData.forEach((markerData) => {
+        const marker = new maptilersdk.Marker({
+          color: markerData.color || '#3B82F6',
+        })
+          .setLngLat([markerData.lng, markerData.lat])
+          .addTo(mapInstance);
 
-      if (markerData.popup) {
-        const popup = new maptilersdk.Popup({ offset: 25 })
-          .setHTML(markerData.popup)
-        marker.setPopup(popup)
-      }
+        if (markerData.popup) {
+          const popup = new maptilersdk.Popup({ offset: 25 }).setHTML(
+            markerData.popup
+          );
+          marker.setPopup(popup);
+        }
 
-      markersRef.current.push(marker)
-    })
-    
-    console.log('Total markers added:', markersRef.current.length)
-  }, [markers, clearMarkers])
+        markersRef.current.push(marker);
+      });
+    },
+    [clearMarkers]
+  );
 
-  // Initialize map
+  // 4. Initialize Map (Run ONCE)
   useEffect(() => {
-    if (!mapContainer.current || map.current) return
+    if (!mapContainer.current || map.current) return;
 
     try {
-      console.log('Initializing map with center:', [center.lng, center.lat])
-      
       map.current = new maptilersdk.Map({
         container: mapContainer.current,
         style: style,
         center: [center.lng, center.lat],
         zoom: zoom,
         interactive: interactive,
-      })
+      });
 
-      // Handle map load event
       map.current.on('load', () => {
-        console.log('Map loaded, setting isMapLoaded to true')
-        isMapLoaded.current = true
-        
+        isMapLoaded.current = true;
         if (map.current && onMapLoad) {
-          onMapLoad(map.current)
+          onMapLoad(map.current);
         }
-        
-        // Add markers once map is loaded
-        if (markers.length > 0 && map.current) {
-          console.log('Map loaded, adding initial markers')
-          addMarkers(map.current)
+        // Initial markers load
+        if (map.current) {
+             addMarkers(map.current, markers);
         }
-      })
+      });
 
-      // Handle map click event
       if (onMapClick) {
         map.current.on('click', (e) => {
-          onMapClick({
-            lng: e.lngLat.lng,
-            lat: e.lngLat.lat,
-          })
-        })
+          onMapClick({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+        });
       }
     } catch (error) {
-      console.error('Error initializing map:', error)
+      console.error('Error initializing map:', error);
     }
 
     return () => {
-      clearMarkers()
+      clearMarkers();
       if (map.current) {
-        map.current.remove()
-        map.current = null
-        isMapLoaded.current = false
+        map.current.remove();
+        map.current = null;
+        isMapLoaded.current = false;
       }
-    }
-  }, [style, center.lng, center.lat, zoom, interactive, onMapLoad, onMapClick, clearMarkers, markers, addMarkers])
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array = Only runs once on mount
 
-  // Update map center and zoom when props change
+  // 5. Reactive Updates
   useEffect(() => {
     if (map.current && isMapLoaded.current) {
-      console.log('Updating map center to:', [center.lng, center.lat])
-      
-      try {
-        map.current.flyTo({
-          center: [center.lng, center.lat],
-          zoom: zoom,
-          duration: 1000,
-        })
-      } catch (error) {
-        console.error('Error updating map center:', error)
-      }
-    } else {
-      console.log('Skipping map center update - map not ready:', {
-        mapExists: !!map.current,
-        mapLoaded: isMapLoaded.current
-      })
+      addMarkers(map.current, markers);
     }
-  }, [center.lng, center.lat, zoom])
+  }, [markers, addMarkers]);
 
-  // Update markers when markers prop changes
   useEffect(() => {
     if (map.current && isMapLoaded.current) {
-      console.log('Markers changed, updating map markers')
-      addMarkers(map.current)
-    } else {
-      console.log('Map not ready for markers yet:', { 
-        mapExists: !!map.current, 
-        mapLoaded: isMapLoaded.current 
-      })
+      map.current.flyTo({
+        center: [center.lng, center.lat],
+        zoom: zoom,
+      });
     }
-  }, [markers, addMarkers])
-
-  // Update map style when style prop changes
-  useEffect(() => {
-    if (map.current) {
-      map.current.setStyle(style)
-    }
-  }, [style])
+  }, [center.lng, center.lat, zoom]);
 
   return (
-    <div
-      className={`map-wrap ${className} rounded-3xl overflow-hidden`}
-      style={{ height, width }}
-    >
+    <div className={`relative ${className}`} style={{ height, width }}>
+      {!apiKey && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-100 font-bold text-red-500">
+          Missing MapTiler API Key
+        </div>
+      )}
       <div
         ref={mapContainer}
-        className="map w-full h-full rounded-3xl overflow-hidden"
-        style={{
-          height: '100%',
-          width: '100%',
-          boxShadow: 'none',
-        }}
+        className="h-full w-full overflow-hidden rounded-xl shadow-lg"
       />
     </div>
-  )
-})
+  );
+});
 
-export default MapViewer
+export default MapViewer;
