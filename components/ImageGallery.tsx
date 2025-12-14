@@ -1,11 +1,20 @@
 import Image from 'next/image'
+import { getCleanImageUrl } from '@/utils/imageHelper' // ✅ Import helper
 
 interface ImageGalleryProps {
-  images: [string, string, string, string, string]
+  images: string[]
 }
 
 function ImageGallery({ images }: ImageGalleryProps) {
-  const [mainImage, ...gridImages] = images
+  // 1. Sanitize all incoming images using the helper
+  const safeImages = (images || []).map(getCleanImageUrl);
+
+  // 2. Ensure we always have at least 5 images (fill with placeholders if needed)
+  while (safeImages.length < 5) {
+    safeImages.push('/placeholder-property.jpg');
+  }
+
+  const [mainImage, ...gridImages] = safeImages;
 
   return (
     <div className="w-full max-w-7xl mx-auto grid grid-cols-2 gap-2 h-96">
@@ -22,7 +31,7 @@ function ImageGallery({ images }: ImageGalleryProps) {
 
       {/* Grid of 4 smaller images on the right */}
       <div className="grid grid-cols-2 grid-rows-2 gap-2">
-        {gridImages.map((image, index) => (
+        {gridImages.slice(0, 4).map((image, index) => (
           <div
             key={index}
             className={`relative overflow-hidden ${

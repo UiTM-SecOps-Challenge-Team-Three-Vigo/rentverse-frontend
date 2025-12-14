@@ -5,6 +5,7 @@ import { RulerDimensionLine, Star } from 'lucide-react'
 import type { Property, PropertyTypeBackend, PropertyType } from '@/types/property'
 import IconPropertyType from '@/utils/IconPropertyType'
 import { swapCasePropertyType, getLocaledPrice, getLocaledArea, getLocaledRating } from '@/utils/property'
+import { getCleanImageUrl } from '@/utils/imageHelper'
 
 // Convert backend property type to frontend property type
 function convertPropertyType(backendType: PropertyTypeBackend): PropertyType {
@@ -20,19 +21,19 @@ function convertPropertyType(backendType: PropertyTypeBackend): PropertyType {
 }
 
 function CardProperty({ property }: { readonly property: Property }) {
-  // 1. Get the raw image string
-  let imageUrl = property.images?.[0] || '/placeholder-property.jpg'
+  // // 1. Get the raw image string
+  // let imageUrl = property.images?.[0] || '/placeholder-property.jpg'
 
-  // 🛠️ FIX: Clean the URL if it contains commas (dirty data fix)
-  if (imageUrl && imageUrl.includes(',')) {
-    imageUrl = imageUrl.split(',')[0].trim()
-  }
+  // // 🛠️ FIX: Clean the URL if it contains commas (dirty data fix)
+  // if (imageUrl && imageUrl.includes(',')) {
+  //   imageUrl = imageUrl.split(',')[0].trim()
+  // }
 
-  // Double check it starts with http (fallback if invalid)
-  if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-    imageUrl = '/placeholder-property.jpg'
-  }
-
+  // // Double check it starts with http (fallback if invalid)
+  // if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+  //   imageUrl = '/placeholder-property.jpg'
+  // }
+  const imageUrl = getCleanImageUrl(property.images?.[0]);
   const propertyType = convertPropertyType(property.type)
   
   return (
