@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from 'react'
 import Link from 'next/link'
 import clsx from 'clsx'
-import { User, Settings, Home, Heart, Search, LogOut, Calendar, Shield } from 'lucide-react'
+import { User, Settings, Home, Heart, Search, LogOut, Calendar, Shield, ClipboardList, Lock } from 'lucide-react'
 import useAuthStore from '@/stores/authStore'
 import useCurrentUser from '@/hooks/useCurrentUser'
 
@@ -176,6 +176,17 @@ function UserDropdown({ isOpen, onClose, className }: Readonly<UserDropdownProps
           <span className="font-medium">My listings</span>
         </Link>
 
+        {(user?.role === 'LANDLORD' || user?.role === 'ADMIN') && (
+          <Link
+            href="/manage/bookings"
+            onClick={onClose}
+            className="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200"
+          >
+            <ClipboardList size={18} className="mr-3 text-slate-400" />
+            <span className="font-medium">Manage Bookings</span>
+          </Link>
+        )}
+
         {/* Admin Portal - Only show for admin users */}
         {user?.role === 'ADMIN' && (
           <>
@@ -194,6 +205,15 @@ function UserDropdown({ isOpen, onClose, className }: Readonly<UserDropdownProps
             >
               <Shield size={18} className="mr-3 text-slate-400" />
               <span className="font-medium">Admin Dashboard</span>
+            </Link>
+
+            <Link
+              href="/admin/activity"
+              onClick={onClose}
+              className="flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-200"
+            >
+              <Lock size={18} className="mr-3 text-slate-400" />
+              <span className="font-medium">Security Dashboard</span>
             </Link>
           </>
         )}
