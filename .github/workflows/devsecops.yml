@@ -2,9 +2,9 @@ name: DevSecOps Pipeline (Node.js)
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ['main', 'master']
   pull_request:
-    branches: [ "main", "master" ]
+    branches: ['main', 'master']
 
 jobs:
   # 1. Software Composition Analysis (SCA) - Check for vulnerable libraries
@@ -61,3 +61,5 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ✅ Added License Key for UiTM-SecOps-Challenge-Team-Three-Vigo
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
